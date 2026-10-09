@@ -1,0 +1,162 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "kervan-voice AgentApi",
+    "version": "0.1.0",
+    "description": "The Kervan customer agent. Text transcripts stand in for voice. Conversations are kept in memory by conversation_id."
+  },
+  "servers": [{ "url": "http://voice:7000" }],
+  "paths": {
+    "/converse": {
+      "post": {
+        "operationId": "converse",
+        "summary": "One customer turn: an utterance in, the agent's reply and the tool calls it made out.",
+        "parameters": [
+          {
+            "name": "X-Trace-Id",
+            "in": "header",
+            "required": false,
+            "description": "Trace id for the logs; generated when absent and echoed in the response.",
+            "schema": { "type": "string", "pattern": "^[\\w.-]{1,128}$" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": { "schema": { "$ref": "#/components/schemas/ConverseRequest" } }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The agent's turn.",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/ConverseResponse" } }
+            }
+          },
+          "400": {
+            "description": "The body is not a valid ConverseRequest.",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          },
+          "500": {
+            "description": "The agent failed.",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "operationId": "health",
+        "summary": "Liveness.",
+        "responses": {
+          "200": {
+            "description": "The service is up.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["status"],
+                  "properties": { "status": { "type": "string", "enum": ["ok"] } },
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/client-metadata.json": {
+      "get": {
+        "operationId": "clientMetadata",
+        "summary": "The OAuth client ID metadata document (CIMD); its URL is the client id.",
+        "responses": {
+          "200": {
+            "description": "The client metadata document.",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/ClientMetadata" } }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ConverseRequest": {
+        "type": "object",
+        "required": ["conversation_id", "utterance"],
+        "properties": {
+          "conversation_id": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "utterance": { "type": "string", "minLength": 1, "maxLength": 4000 }
+        }
+      },
+      "ConverseResponse": {
+        "type": "object",
+        "required": ["reply", "tool_calls", "state"],
+        "properties": {
+          "reply": { "type": "string" },
+          "tool_calls": { "type": "array", "items": { "$ref": "#/components/schemas/ToolCall" } },
+          "state": { "type": "string", "enum": ["open", "done"] }
+        },
+        "additionalProperties": false
+      },
+      "ToolCall": {
+        "type": "object",
+        "required": ["name", "arguments", "is_error", "result"],
+        "properties": {
+          "name": { "type": "string", "enum": ["get_shipment", "reschedule_delivery", "open_ticket", "search_help"] },
+          "arguments": { "type": "object", "additionalProperties": true },
+          "is_error": { "type": "boolean" },
+          "result": {
+            "description": "The tool's structured result, or for an error its text, e.g. \"409 not_reschedulable\".",
+            "oneOf": [{ "type": "object", "additionalProperties": true }, { "type": "string" }]
+          }
+        },
+        "additionalProperties": false
+      },
+      "ClientMetadata": {
+        "type": "object",
+        "required": ["client_id", "client_name", "grant_types", "token_endpoint_auth_method", "scope", "jwks"],
+        "properties": {
+          "client_id": { "type": "string", "format": "uri" },
+          "client_name": { "type": "string" },
+          "grant_types": { "type": "array", "items": { "type": "string", "enum": ["client_credentials"] } },
+          "token_endpoint_auth_method": { "type": "string", "enum": ["private_key_jwt"] },
+          "scope": { "type": "string" },
+          "jwks": {
+            "type": "object",
+            "required": ["keys"],
+            "properties": {
+              "keys": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["kty", "crv", "kid", "x", "y", "alg", "use"],
+                  "properties": {
+                    "kty": { "type": "string", "enum": ["EC"] },
+                    "crv": { "type": "string", "enum": ["P-256"] },
+                    "kid": { "type": "string" },
+                    "x": { "type": "string" },
+                    "y": { "type": "string" },
+                    "alg": { "type": "string", "enum": ["ES256"] },
+                    "use": { "type": "string", "enum": ["sig"] }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "Error": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": { "type": "string" },
+          "message": { "type": "string" }
+        }
+      }
+    }
+  }
+}
