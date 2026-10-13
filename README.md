@@ -1,6 +1,9 @@
 # kervan-voice
 
-The Kervan customer agent. Text transcripts stand in for voice. It is one of the seven repositories of Kervan, the fictional cargo company used to test Mandate. All data is synthetic. The cross-repository contract is the Kervan `SPEC.md`, kept next to the seeds in the Mandate repository (`examples/kervan/SPEC.md`). This component follows §1, §2, §3.2–3.3, §4, §6 and §8.
+> Part of **[Kervan](https://github.com/onurkoocc/kervan-system)**, a fictional cargo company built as a
+> reference for backends where AI agents can safely act on a customer's behalf. Start there.
+
+The Kervan customer agent. Text transcripts stand in for voice. It is one of the seven repositories of Kervan, the fictional cargo company used to test Mandate. All data is synthetic. The cross-repository contract is the Kervan `SPEC.md`. This component follows §1, §2, §3.2–3.3, §4, §6 and §8.
 
 ```text
 evals ──POST /converse──▶ voice ──client_credentials + private_key_jwt (CIMD)──▶ auth
